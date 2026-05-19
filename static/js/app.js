@@ -30,6 +30,24 @@ function initSocket() {
 
         socket.on('connect', () => {
             console.log('🔌 Socket connected');
+            // Re-check system status on (re)connect
+            checkStatus();
+        });
+
+        socket.on('disconnect', () => {
+            console.warn('🔌 Socket disconnected');
+            systemReady = false;
+            const badge = $('#system-status-badge');
+            badge.className = 'status-badge disconnected';
+            badge.querySelector('.status-text').textContent = 'Disconnected';
+        });
+
+        socket.on('connect_error', () => {
+            console.warn('🔌 Socket connection error');
+            systemReady = false;
+            const badge = $('#system-status-badge');
+            badge.className = 'status-badge disconnected';
+            badge.querySelector('.status-text').textContent = 'Disconnected';
         });
 
         socket.on('status_update', (data) => {
