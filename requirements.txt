@@ -1,0 +1,25 @@
+# ============================================================
+# Prosthetic Hand - Raspberry Pi 5 Requirements
+# ============================================================
+# Install with:
+#   pip install -r requirements.txt
+#
+# If any package fails, see INSTALL_GUIDE.md for solutions.
+# ============================================================
+
+# ── Core scientific computing ──
+numpy
+scipy
+
+# ── TFLite inference (pick ONE — ai-edge-litert is recommended) ──
+# Option A (recommended for Pi 5 / newer systems):
+ai-edge-litert
+# Option B (legacy, may not have Pi 5 wheels):
+# tflite-runtime
+
+# ── Web GUI (Flask) ──
+flask
+flask-socketio
+
+# ── Servo control via PCA9685 (I2C) ──
+adafruit-circuitpython-servokit
