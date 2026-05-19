@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prosthetic Hand Control System — sEMG Based</title>
+    <meta name="description" content="Real-time sEMG-based prosthetic hand control using deep learning (DANN) and NINAPRO DB1 dataset">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- HEADER                                                             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <header id="app-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="18" stroke="url(#logoGrad)" stroke-width="2.5" fill="none"/>
+                        <path d="M20 8C14 8 12 14 12 18C12 22 14 26 16 28L18 30H22L24 28C26 26 28 22 28 18C28 14 26 8 20 8Z" 
+                              fill="url(#logoGrad)" opacity="0.15"/>
+                        <path d="M16 18V26M19 16V28M22 17V27M25 18V25" stroke="url(#logoGrad)" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="20" cy="12" r="2" fill="url(#logoGrad)"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40">
+                                <stop offset="0%" stop-color="#6C5CE7"/>
+                                <stop offset="100%" stop-color="#00CEC9"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="header-text">
+                    <h1>Prosthetic Hand Control</h1>
+                    <p class="header-subtitle">sEMG-based Deep Learning System · NINAPRO DB1</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="status-badge" id="system-status-badge">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Initializing...</span>
+                </div>
+                <div class="servo-mode-badge" id="servo-mode-badge">
+                    <span>SIM</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- MAIN CONTENT                                                       -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <main id="app-main">
+
+        <!-- ─── Pipeline Status Bar ─────────────────────────────────── -->
+        <section id="pipeline-section" class="pipeline-bar hidden">
+            <div class="pipeline-steps">
+                <div class="pipeline-step" data-step="sampling">
+                    <div class="step-icon">📊</div>
+                    <div class="step-label">Sample</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step" data-step="preprocessing">
+                    <div class="step-icon">⚡</div>
+                    <div class="step-label">Preprocess</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step" data-step="inferring">
+                    <div class="step-icon">🧠</div>
+                    <div class="step-label">Inference</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step" data-step="moving">
+                    <div class="step-icon">🦾</div>
+                    <div class="step-label">Actuate</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step" data-step="holding">
+                    <div class="step-icon">⏱️</div>
+                    <div class="step-label">Hold</div>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step" data-step="resting">
+                    <div class="step-icon">🔄</div>
+                    <div class="step-label">Rest</div>
+                </div>
+            </div>
+            <div class="pipeline-message" id="pipeline-message">Ready</div>
+        </section>
+
+        <!-- ─── Results Panel (appears after inference) ──────────── -->
+        <section id="results-section" class="results-panel hidden">
+            <div class="results-grid">
+                <!-- Inference Result Card -->
+                <div class="result-card inference-card">
+                    <div class="result-card-header">
+                        <h3>🧠 Inference Result</h3>
+                    </div>
+                    <div class="result-card-body">
+                        <div class="result-row">
+                            <span class="result-label">Selected:</span>
+                            <span class="result-value" id="result-selected">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Predicted:</span>
+                            <span class="result-value" id="result-predicted">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Confidence:</span>
+                            <div class="confidence-bar-container">
+                                <div class="confidence-bar" id="confidence-bar"></div>
+                                <span class="confidence-value" id="confidence-value">0%</span>
+                            </div>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Inference Time:</span>
+                            <span class="result-value mono" id="result-time">— ms</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Match:</span>
+                            <span class="result-value" id="result-match">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Servo Angles Card -->
+                <div class="result-card servo-card">
+                    <div class="result-card-header">
+                        <h3>🦾 Servo Angles</h3>
+                    </div>
+                    <div class="result-card-body">
+                        <div class="servo-fingers">
+                            <div class="finger-gauge" id="gauge-thumb">
+                                <div class="gauge-fill"></div>
+                                <div class="gauge-label">Thumb</div>
+                                <div class="gauge-value">0°</div>
+                            </div>
+                            <div class="finger-gauge" id="gauge-index">
+                                <div class="gauge-fill"></div>
+                                <div class="gauge-label">Index</div>
+                                <div class="gauge-value">0°</div>
+                            </div>
+                            <div class="finger-gauge" id="gauge-middle">
+                                <div class="gauge-fill"></div>
+                                <div class="gauge-label">Middle</div>
+                                <div class="gauge-value">0°</div>
+                            </div>
+                            <div class="finger-gauge" id="gauge-ring">
+                                <div class="gauge-fill"></div>
+                                <div class="gauge-label">Ring</div>
+                                <div class="gauge-value">0°</div>
+                            </div>
+                            <div class="finger-gauge" id="gauge-little">
+                                <div class="gauge-fill"></div>
+                                <div class="gauge-label">Little</div>
+                                <div class="gauge-value">0°</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EMG Preview Card -->
+                <div class="result-card emg-card">
+                    <div class="result-card-header">
+                        <h3>📊 sEMG Signal Window</h3>
+                        <span class="card-badge" id="sample-badge">Sample 1/10</span>
+                    </div>
+                    <div class="result-card-body">
+                        <canvas id="emg-canvas" width="600" height="180"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Exercise Filter Tabs ─────────────────────────────── -->
+        <section id="filter-section">
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">
+                    All Movements
+                    <span class="tab-count">29</span>
+                </button>
+                <button class="filter-tab" data-filter="1">
+                    Exercise 1
+                    <span class="tab-count">12</span>
+                </button>
+                <button class="filter-tab" data-filter="2">
+                    Exercise 2
+                    <span class="tab-count">8</span>
+                </button>
+                <button class="filter-tab" data-filter="3">
+                    Exercise 3
+                    <span class="tab-count">9</span>
+                </button>
+            </div>
+            <div class="filter-descriptions">
+                <span class="filter-desc active" data-for="all">All 29 classified hand movements from NINAPRO DB1</span>
+                <span class="filter-desc" data-for="1">Individual finger flexion and extension movements</span>
+                <span class="filter-desc" data-for="2">Hand configurations and postures</span>
+                <span class="filter-desc" data-for="3">Functional grasping movements</span>
+            </div>
+        </section>
+
+        <!-- ─── Movement Cards Grid ──────────────────────────────── -->
+        <section id="movements-section">
+            <div class="movements-grid" id="movements-grid">
+                <!-- Cards will be populated by JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FOOTER                                                             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <footer id="app-footer">
+        <div class="footer-content">
+            <span>Graduation Project — sEMG-Based Prosthetic Hand Control</span>
+            <span class="footer-divider">·</span>
+            <span>DANN Model · TFLite · Raspberry Pi 5</span>
+        </div>
+    </footer>
+
+    <!-- ─── Small inline toast (non-blocking) ────────────────────── -->
+    <div id="execution-toast" class="exec-toast hidden">
+        <div class="toast-spinner"></div>
+        <div class="toast-text">
+            <span class="toast-title" id="toast-title">Executing...</span>
+            <span class="toast-message" id="toast-message">Processing</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SCRIPTS                                                            -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
