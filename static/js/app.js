@@ -40,6 +40,7 @@ function initSocket() {
             const badge = $('#system-status-badge');
             badge.className = 'status-badge disconnected';
             badge.querySelector('.status-text').textContent = 'Disconnected';
+            $('#servo-mode-badge').classList.add('stale');
         });
 
         socket.on('connect_error', () => {
@@ -48,6 +49,7 @@ function initSocket() {
             const badge = $('#system-status-badge');
             badge.className = 'status-badge disconnected';
             badge.querySelector('.status-text').textContent = 'Disconnected';
+            $('#servo-mode-badge').classList.add('stale');
         });
 
         socket.on('status_update', (data) => {
@@ -108,6 +110,8 @@ async function checkStatus() {
             modeBadge.className = 'servo-mode-badge';
             modeBadge.querySelector('span').textContent = 'SIM';
         }
+        // Clear stale state — we just got a fresh response from the server
+        modeBadge.classList.remove('stale');
     } catch (e) {
         const badge = $('#system-status-badge');
         badge.className = 'status-badge error';
